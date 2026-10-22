@@ -40,12 +40,14 @@ proot-distro login ubuntu --bind "$BASE:/voice" -- bash -lc '
   /root/uvenv/bin/uv venv --python 3.10 /root/venv
   . /root/venv/bin/activate
   U="/root/uvenv/bin/uv pip install --python /root/venv/bin/python"
-  $U wheel setuptools
+  # setuptools 81 이상은 pkg_resources가 없어 openai-whisper 빌드가 실패함
+  $U wheel "setuptools<81"
   # aarch64용 PyPI torch는 CPU 빌드
   $U torch==2.3.1 torchaudio==2.3.1
   # CPU 전용: GPU/CUDA 전용 패키지(deepspeed, tensorrt, onnxruntime-gpu)는 제외
   grep -v -E "^(--|deepspeed|tensorrt|onnxruntime-gpu|torch|torchaudio)" /voice/repo/CosyVoice/requirements.txt > /root/req-cpu.txt
   echo "onnxruntime==1.18.0" >> /root/req-cpu.txt
+  $U --no-build-isolation openai-whisper==20231117
   $U -r /root/req-cpu.txt
   python - <<PY
 from modelscope import snapshot_download

@@ -4,6 +4,14 @@
 - 한국어, 제로샷 음성 복제(10~30초 샘플), 감정 instruct, `[breath]` `[laughter]` `[cough]` `<strong>` 태그
 - 모든 추론은 폰 안에서(CPU) 실행. 인터넷은 설치/모델 다운로드 때만 필요.
 
+## ☁️ 폰 메모리가 부족하면: 무료 Colab 버전 (추천)
+폰 브라우저로 Google Colab(무료 GPU)에서 돌리는 방식입니다. 설치 없이 웹 화면에서 목소리 등록·말하기를 합니다.
+
+1. 폰 크롬에서 열기: https://colab.research.google.com/github/delveintona/Voice/blob/ccr-b6b2108c-tujej3/colab/Voice.ipynb
+2. 런타임 → 런타임 유형 변경 → **T4 GPU**
+3. 셀 1~4를 순서대로 ▶ 실행, 4번에 나오는 `gradio.live` 링크 열기
+4. 목소리와 결과는 구글 드라이브 `voice_clone` 폴더에 남습니다.
+
 ## 설치 (폰의 Termux에서, F-Droid 버전 권장)
 ```
 pkg install -y git

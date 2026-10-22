@@ -18,11 +18,12 @@ import subprocess
 import sys
 import time
 
-BASE = os.environ.get("VOICE_DIR", "/voice")
+BASE = os.environ.get("VOICE_DIR", "/voice")           # 목소리·결과·사전 (남겨야 하는 것)
+ENGINE = os.environ.get("VOICE_ENGINE", BASE)           # CosyVoice 코드·모델 (다시 받을 수 있는 것)
 VOICES = f"{BASE}/voices"
 OUT = f"{BASE}/outputs"
-MODEL_DIR = f"{BASE}/models/Fun-CosyVoice3-0.5B"
-WHISPER_DIR = f"{BASE}/models/whisper"
+MODEL_DIR = f"{ENGINE}/models/Fun-CosyVoice3-0.5B"
+WHISPER_DIR = f"{ENGINE}/models/whisper"
 HEAD = "You are a helpful assistant."
 MAX_REF_SEC = 20
 
@@ -103,6 +104,12 @@ def _time(m):
 
 
 def normalize_ko(text: str, user_dict=None) -> str:
+    """[pause 1.0] 같은 쉼 태그의 숫자는 건드리지 않고, 나머지 글만 한국어식으로 바꾼다."""
+    parts = re.split(r"(\[pause(?:\s+[\d.]+)?\])", text)
+    return "".join(p if i % 2 else _normalize_part(p, user_dict) for i, p in enumerate(parts)).strip()
+
+
+def _normalize_part(text: str, user_dict=None) -> str:
     """CosyVoice의 영어용 정규화는 숫자를 영어로 읽어 버리므로, 한국어식 읽기로 직접 바꾼다."""
     for k in sorted(user_dict or {}, key=len, reverse=True):
         text = text.replace(k, user_dict[k])
@@ -264,25 +271,33 @@ def transcribe(path):
     return r["text"].strip()
 
 
-def cmd_add(a, model=None):
-    if not os.path.exists(a.audio):
-        sys.exit(f"파일이 없어요: {a.audio}")
-    d = voice_dir(a.name)
+def add_voice(name, audio, text="", model_fn=None, log=print):
+    """목소리를 등록(전처리 -> 받아쓰기 -> 음색 저장). CLI와 웹 화면이 같이 쓴다."""
+    if not audio or not os.path.exists(audio):
+        raise FileNotFoundError(f"파일이 없어요: {audio}")
+    d = voice_dir(name)
     os.makedirs(d, exist_ok=True)
-    preprocess_ref(a.audio, f"{d}/ref.wav")
+    preprocess_ref(audio, f"{d}/ref.wav")
     sec = wav_seconds(f"{d}/ref.wav")
-    print(f"참조 음성 {sec:.1f}초")
+    log(f"참조 음성 {sec:.1f}초")
     if sec < 5:
-        print("⚠ 5초보다 짧아요. 10~20초면 품질이 훨씬 좋아져요.")
-    text = a.text or transcribe(f"{d}/ref.wav")
-    print("대사:", text)
-    if not a.text:
-        print("  (틀렸다면: voice.py add 이름 파일 --text \"정확한 대사\" 로 다시 등록하세요)")
+        log("⚠ 5초보다 짧아요. 10~20초면 품질이 훨씬 좋아져요.")
+    text = (text or "").strip() or transcribe(f"{d}/ref.wav")
+    log("대사: " + text)
     json.dump({"text": text}, open(f"{d}/meta.json", "w", encoding="utf-8"), ensure_ascii=False)
-    m = model or get_model()
-    m.add_zero_shot_spk(f"{HEAD}<|endofprompt|>{text}", f"{d}/ref.wav", a.name)
+    m = (model_fn or get_model)()
+    m.add_zero_shot_spk(f"{HEAD}<|endofprompt|>{text}", f"{d}/ref.wav", name)
     m.save_spkinfo()
-    print(f"'{a.name}' 저장 완료. 이제: say {a.name} \"문장\"")
+    log(f"'{name}' 저장 완료.")
+    return text
+
+
+def cmd_add(a):
+    try:
+        add_voice(a.name, a.audio, a.text)
+    except FileNotFoundError as e:
+        sys.exit(str(e))
+    print(f"이제: say {a.name} \"문장\"  (대사가 틀렸다면 --text \"정확한 대사\" 로 다시 등록)")
 
 
 def cmd_remove(a):
@@ -312,9 +327,10 @@ def find_model_dir():
 def get_model():
     global _model
     if _model is None:
-        sys.path[:0] = ["/voice/repo/CosyVoice", "/voice/repo/CosyVoice/third_party/Matcha-TTS"]
+        sys.path[:0] = [f"{ENGINE}/repo/CosyVoice", f"{ENGINE}/repo/CosyVoice/third_party/Matcha-TTS"]
+        import torch
         from cosyvoice.cli.cosyvoice import AutoModel
-        _model = AutoModel(model_dir=find_model_dir())
+        _model = AutoModel(model_dir=find_model_dir(), fp16=torch.cuda.is_available())
     return _model
 
 

@@ -28,7 +28,7 @@ proot-distro login ubuntu -- true 2>/dev/null || proot-distro install ubuntu
 [ -d "$BASE/repo/CosyVoice/.git" ] || git clone --depth 1 --recursive https://github.com/FunAudioLLM/CosyVoice "$BASE/repo/CosyVoice"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cp "$SCRIPT_DIR/clone_voice.py" "$BASE/clone_voice.py"
+cp "$SCRIPT_DIR/voice.py" "$BASE/voice.py"
 
 # proot Ubuntu 안에 파이썬 환경 구성 (SD를 /voice 로 마운트)
 proot-distro login ubuntu --bind "$BASE:/voice" -- bash -lc '
@@ -56,4 +56,4 @@ from modelscope import snapshot_download
 snapshot_download("FunAudioLLM/Fun-CosyVoice3-0.5B-2512", local_dir="/voice/models/Fun-CosyVoice3-0.5B")
 PY
 '
-echo "완료. 내 목소리 샘플(10~30초, wav)을 $BASE/samples/ref.wav 로 넣고:  bash $(dirname "$0")/run_phone.sh \"합성할 문장\""
+echo "완료. 목소리 녹음을 $BASE/samples/ 에 넣고:  bash scripts/run_phone.sh add 내목소리 ref.wav"

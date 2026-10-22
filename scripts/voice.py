@@ -258,6 +258,9 @@ def transcribe(path):
     print("녹음 속 대사를 받아 적는 중... (처음엔 모델을 내려받아요)")
     m = whisper.load_model("base", download_root=WHISPER_DIR, device="cpu")
     r = m.transcribe(path, language="ko", fp16=False, temperature=0)
+    del m  # 메모리가 모자란 폰에서 음성 모델을 올리기 전에 반드시 내린다
+    import gc
+    gc.collect()
     return r["text"].strip()
 
 

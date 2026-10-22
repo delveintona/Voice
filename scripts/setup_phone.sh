@@ -19,7 +19,9 @@ mkdir -p "$BASE"/{repo,models,samples,outputs}
 echo "작업 폴더(SD): $BASE"
 echo "export VOICE_BASE=\"$BASE\"" > "$HOME/.voice_env"
 
-pkg update -y && pkg install -y git proot-distro ffmpeg
+pkg update -y && pkg upgrade -y -o Dpkg::Options::="--force-confnew"
+dpkg --configure -a || true
+pkg install -y git proot-distro ffmpeg
 proot-distro list | grep -q "ubuntu.*installed" || proot-distro install ubuntu
 
 # 레포 다운로드 (Apache-2.0, 한국어/감정 instruct/[breath] 지원)

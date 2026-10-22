@@ -39,6 +39,8 @@ proot-distro login ubuntu --bind "$BASE:/voice" -- bash -lc '
   python3 -m venv /root/uvenv && /root/uvenv/bin/pip install -U pip uv
   /root/uvenv/bin/uv venv --python 3.10 /root/venv
   . /root/venv/bin/activate
+  # proot에서는 하드링크/병렬 설치가 불안정해서 복사 방식 + 1개씩 설치
+  export UV_LINK_MODE=copy UV_CONCURRENT_INSTALLS=1
   U="/root/uvenv/bin/uv pip install --python /root/venv/bin/python"
   # setuptools 81 이상은 pkg_resources가 없어 openai-whisper 빌드가 실패함
   $U wheel "setuptools<81"

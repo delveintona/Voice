@@ -33,15 +33,20 @@ cp "$SCRIPT_DIR/clone_voice.py" "$BASE/clone_voice.py"
 # proot Ubuntu 안에 파이썬 환경 구성 (SD를 /voice 로 마운트)
 proot-distro login ubuntu --bind "$BASE:/voice" -- bash -lc '
   set -e
-  apt-get update && apt-get install -y python3 python3-venv python3-pip git ffmpeg sox libsox-dev build-essential
-  python3 -m venv /root/venv
+  apt-get update && apt-get install -y python3 python3-venv python3-pip git ffmpeg sox libsox-dev build-essential curl
+  # Ubuntu 기본 파이썬(3.14)은 너무 새로워서 torch 2.3.1이 없음 -> uv로 파이썬 3.10 환경을 만든다
+  rm -rf /root/venv
+  python3 -m venv /root/uvenv && /root/uvenv/bin/pip install -U pip uv
+  /root/uvenv/bin/uv venv --python 3.10 /root/venv
   . /root/venv/bin/activate
-  pip install -U pip wheel
-  pip install torch==2.3.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cpu
+  U="/root/uvenv/bin/uv pip install --python /root/venv/bin/python"
+  $U wheel setuptools
+  # aarch64용 PyPI torch는 CPU 빌드
+  $U torch==2.3.1 torchaudio==2.3.1
   # CPU 전용: GPU/CUDA 전용 패키지(deepspeed, tensorrt, onnxruntime-gpu)는 제외
   grep -v -E "^(--|deepspeed|tensorrt|onnxruntime-gpu|torch|torchaudio)" /voice/repo/CosyVoice/requirements.txt > /root/req-cpu.txt
   echo "onnxruntime==1.18.0" >> /root/req-cpu.txt
-  pip install -r /root/req-cpu.txt
+  $U -r /root/req-cpu.txt
   python - <<PY
 from modelscope import snapshot_download
 snapshot_download("FunAudioLLM/Fun-CosyVoice3-0.5B-2512", local_dir="/voice/models/Fun-CosyVoice3-0.5B")

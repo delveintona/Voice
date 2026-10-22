@@ -294,12 +294,24 @@ def cmd_remove(a):
 _model = None
 
 
+def find_model_dir():
+    """모델은 SD(models/) 또는 modelscope 캐시 어느 쪽에 받아졌든 찾아 쓴다."""
+    import glob
+    if os.path.exists(f"{MODEL_DIR}/cosyvoice3.yaml"):
+        return MODEL_DIR
+    hits = glob.glob("/root/.cache/modelscope/hub/**/cosyvoice3.yaml", recursive=True)
+    if not hits:
+        sys.exit("모델 파일을 못 찾았어요. bash scripts/setup_phone.sh 를 다시 실행해 주세요.")
+    print("모델 위치:", os.path.dirname(hits[0]))
+    return os.path.dirname(hits[0])
+
+
 def get_model():
     global _model
     if _model is None:
         sys.path[:0] = ["/voice/repo/CosyVoice", "/voice/repo/CosyVoice/third_party/Matcha-TTS"]
         from cosyvoice.cli.cosyvoice import AutoModel
-        _model = AutoModel(model_dir=MODEL_DIR)
+        _model = AutoModel(model_dir=find_model_dir())
     return _model
 
 

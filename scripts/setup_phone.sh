@@ -22,7 +22,7 @@ echo "export VOICE_BASE=\"$BASE\"" > "$HOME/.voice_env"
 pkg update -y && pkg upgrade -y -o Dpkg::Options::="--force-confnew"
 dpkg --configure -a || true
 pkg install -y git proot-distro ffmpeg
-proot-distro list | grep -q "ubuntu.*installed" || proot-distro install ubuntu
+proot-distro login ubuntu -- true 2>/dev/null || proot-distro install ubuntu
 
 # 레포 다운로드 (Apache-2.0, 한국어/감정 instruct/[breath] 지원)
 [ -d "$BASE/repo/CosyVoice/.git" ] || git clone --depth 1 --recursive https://github.com/FunAudioLLM/CosyVoice "$BASE/repo/CosyVoice"
